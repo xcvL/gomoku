@@ -1,0 +1,6 @@
+width of image: 774px
+height of image: 774px
+side length: 702px
+line thickness: 3px
+length between lines: 39px (based on the center of the line)
+length between outer line and screen edge: 36px (based on center of line)
