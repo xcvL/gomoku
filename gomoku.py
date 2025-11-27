@@ -1,64 +1,20 @@
-from typing import List
+from typing import List, Tuple
 import copy
 import numpy
 import pygame
 
-pygame.init()
+# ========== functions ==========
 
-SCREEN_LENGTH = 774
-screen = pygame.display.set_mode((SCREEN_LENGTH, SCREEN_LENGTH)) # 스크린
-pygame.display.set_caption("오목") # 제목
-
-background_img = pygame.image.load("img/checkerboard.png") # 배경 이미지
-
-checkerboard = [] # 바둑판
-for i in range(19):
-    temp = []
-    for j in range(19):
-        temp.append(0)
-    checkerboard.append(temp)
-
-def extract_subcheckerboard(index):
+def all_square_list(board: List[List[int]]) -> List[List[List[int]]]:
     '''
-    승자 확인을 위한 리스트 반환
+    `size` * `size` 크기의 가능한 모든 리스트들을 리스트에 넣어 반환
     
-    자세한 반환값
-    =======
-    1. index의 상하좌우 4개의 원소를 포함하는 9*9리스트
-
-    2. 한 방향으로 4개이하의 원소가 있을 경우 그 방향의 최대 길이까지만 포함
+    :param board: `subcheckerboard`
+    :type board: List[List[int]]
+    :return: `size` * `size` 크기의 가능한 모든 리스트들을 넣은 리스트
+    :rtype: List[List[List[int]]]
     '''
-    a = index[0]
-    b = index[1]
 
-    a_start = max(0, a - 4)
-    a_end = min(19, a + 5)
-    b_start = max(0, b - 4)
-    b_end = min(19, b + 5)
-
-    sub = [i[b_start:b_end] for i in checkerboard[a_start:a_end]]
-    return sub
-
-def check_winner(board, check_list):
-    '''
-    행 또는 열 또는 대각선으로 승리했는지 확인
-    
-    board에 어떠한 처리도 하지 않았다면 행을 확인하는 경우
-
-    board에 전치(numpy.array.T)를 취했다면 열을 확인하는 경우
-
-    all_square_list, diaginol을 거쳤다면 대각선을 확인하는 경우
-    '''
-    for i in board:
-        for j in range(len(i) - 4):
-            if i[j:j+5] == check_list:
-                return True
-    return False
-
-def all_square_list(board):
-    '''
-    size*size 크기의 가능한 모든 리스트들을 리스트에 넣어 반환
-    '''
     if len(board) == 0:
         return []
 
@@ -78,9 +34,14 @@ def all_square_list(board):
     
     return result
 
-def diagonal(board) -> List[List[int]]:
+def diagonal(board: List[List[int]]) -> List[List[int]]:
     '''
-    대각선에 위치한 돌들의 리스트들을 result에 넣어 반환
+    대각선 돌들의 값을 넣은 리스트들을 넣은 리스트를 반환
+    
+    :param board: `subcheckerboard`
+    :type board: List[List[int]]
+    :return: 대각선 돌들의 값을 넣은 리스트들을 넣은 리스트
+    :rtype: List[List[int]]
     '''
     result = []
 
@@ -104,6 +65,80 @@ def diagonal(board) -> List[List[int]]:
     
     return result
 
+def check_winner(board: List[List[int]], check_list: List) -> bool:
+    '''
+    행 또는 열 또는 대각선으로 승리했는지 확인
+    
+    :param board: `subcheckerboard`
+    :type board: List[List[int]]
+    :param check_list: 오목 완성 확인 리스트
+    :type check_list: List
+    :return: 오목을 완성 했다면 True, 아니라면 False
+    :rtype: bool
+    '''
+
+    for i in board:
+        for j in range(len(i) - 4):
+            if i[j:j+5] == check_list:
+                return True
+    return False
+
+def winner(placement_pos: Tuple[int, int], check_list: List[int]) -> bool:
+    '''
+    오목 완성 확인
+    
+    :param placement_pos: 착수 지점
+    :type placement_pos: Tuple[int, int]
+    :param check_list: 오목 완성 확인 리스트
+    :type check_list: List[int]
+    :return: 오목이 완성 되었다면 True, 아니라면 False
+    :rtype: bool
+    '''
+
+    tempboard = []
+    x = placement_pos[0]
+    y = placement_pos[1]
+
+    a_start = max(0, x - 4)
+    a_end = min(19, x + 5)
+    b_start = max(0, y - 4)
+    b_end = min(19, y + 5)
+
+    subcheckerboard = [i[b_start:b_end] for i in checkerboard[a_start:a_end]]
+
+    # 대각선 돌들의 값을 tempboard에 넣기
+    for i in all_square_list(subcheckerboard):
+        tempboard += diagonal(i)
+    for i in all_square_list(list(reversed(subcheckerboard))):
+        tempboard += diagonal(i)
+                        
+    win_by_row = check_winner(subcheckerboard, check_list) # 행 확인
+    win_by_column = check_winner(numpy.array(subcheckerboard).T.tolist(), check_list) # 열 확인
+    win_by_diagonal = check_winner(tempboard, check_list) # 댁각선 확인
+
+    return win_by_row or win_by_column or win_by_diagonal
+
+# ========== end ==========
+
+pygame.init()
+
+SCREEN_LENGTH = 774
+screen = pygame.display.set_mode((SCREEN_LENGTH, SCREEN_LENGTH)) # 스크린
+pygame.display.set_caption("오목") # 제목
+
+background_img = pygame.image.load("img/checkerboard.png") # 배경 이미지
+
+font = pygame.font.SysFont(None, 150)# 폰트
+TEXT_COLOR = (3, 34, 171) # 텍스트 색상
+
+checkerboard = [] # 바둑판
+for i in range(19):
+    temp = []
+    for j in range(19):
+        temp.append(0)
+    checkerboard.append(temp)
+
+# 오목 완성 확인 리스트
 BLACKWINCHECK = [1, 1, 1, 1, 1] # 흑돌이 승리를 검사할 리스트
 WHITEWINCHECK = [-1, -1, -1, -1, -1] # 백돌의 승리를 검사할 리스트
 
@@ -124,15 +159,16 @@ rects = [] # area들의 rect를 담을 리스트
 for i in range(361):
     rects.append(area.get_rect(topleft=poses[i]))
 
-radius = 19 # 흑돌, 백돌의 반지름
+RADIUS = 19 # 흑돌, 백돌의 반지름
 circle_rect = None
-circle = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+circle = pygame.Surface((RADIUS * 2, RADIUS * 2), pygame.SRCALPHA)
 
 placement_poses = [] # 착수 위치를 담을 리스트
 black = True # 흑돌 여부 (흑돌부터 시작)
+show_text = False # 텍스트 렌더링 여부
+end = False # 종료 여부
 running = True
 while running:
-    placement_pos = None
     subcheckerboard = []
     tempcheckerboard = []
 
@@ -140,46 +176,64 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_r]: # 초기화
+            placement_poses = []
+            black = True
+            show_text = False
+            end = False
+            checkerboard = [] # 바둑판
+            for i in range(19):
+                temp = []
+                for j in range(19):
+                    temp.append(0)
+                checkerboard.append(temp)
+        
         # 클릭하면 돌 착수
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and not end:
             mouse_pos = event.pos
             for i in range(361):
                 if rects[i].collidepoint(mouse_pos):
                     pos = poses[i]
-                    if black == True: # 흑돌 착수
-                        placement_poses.append((pos[0] + radius, pos[1] + radius))
-                        placement_pos = checkerboard_pos[i]
+                    placement_pos = checkerboard_pos[i]
+                    stone_value = checkerboard[placement_pos[0]][placement_pos[1]]
+
+                    if black and stone_value == 0: # 흑돌 착수
+                        placement_poses.append((pos[0] + RADIUS , pos[1] + RADIUS))
                         checkerboard[placement_pos[0]][placement_pos[1]] = 1 # 흑돌 위치 표시
-                        subcheckerboard = extract_subcheckerboard(placement_pos) # 승자를 확인하기 위한 리스트 (placement_pos 주위 원소들)
-                        # 대각선 돌들의 값을 tempcheckerboard에 넣기
-                        for i in all_square_list(subcheckerboard):
-                            tempcheckerboard += diagonal(i)
-                        for i in all_square_list(list(reversed(subcheckerboard))):
-                            tempcheckerboard += diagonal(i)
                         black = False
-                    else: # 백돌 착수
-                        placement_poses.append((pos[0] + radius, pos[1] + radius))
-                        placement_pos = checkerboard_pos[i]
+                        if winner(placement_pos, BLACKWINCHECK): # 흑돌의 오목 완성 확인
+                            text = font.render("Black win!", True, TEXT_COLOR)
+                            TEXT_WIDTH, TEXT_HEIGHT = text.get_size()
+                            TEXT_X, TEXT_Y = (SCREEN_LENGTH - TEXT_WIDTH) / 2, (SCREEN_LENGTH - TEXT_HEIGHT) / 2
+                            show_text = True
+                            end = True
+
+                    elif not black and stone_value == 0: # 백돌 착수
+                        placement_poses.append((pos[0] + RADIUS , pos[1] + RADIUS))
                         checkerboard[placement_pos[0]][placement_pos[1]] = -1 # 백돌 위치 표시
-                        subcheckerboard = extract_subcheckerboard(placement_pos) # 승자를 확인하기 위한 리스트 (placement_pos 주위 원소들)
-                        # 대각선 돌들의 값을 tempcheckerboard에 넣기
-                        for i in all_square_list(subcheckerboard):
-                            tempcheckerboard += diagonal(i)
-                        for i in all_square_list(list(reversed(subcheckerboard))):
-                            tempcheckerboard += diagonal(i)
                         black = True
+                        if winner(placement_pos, WHITEWINCHECK): # 백돌의 오목 완성 확인
+                            text = font.render("White win!", True, TEXT_COLOR)
+                            TEXT_WIDTH, TEXT_HEIGHT = text.get_size()
+                            TEXT_X, TEXT_Y = (SCREEN_LENGTH - TEXT_WIDTH) / 2, (SCREEN_LENGTH - TEXT_HEIGHT) / 2
+                            show_text = True
+                            end = True
+                    #break
         
     mouse_pos = pygame.mouse.get_pos()
     
     # 예상 착수 지점
-    for i in rects:
-        if i.collidepoint(mouse_pos):
-            if black == True: # 흑돌의 예상 착수 지점
-                circle_rect = i
-                pygame.draw.circle(circle, (0, 0, 0, 128), (radius, radius), radius)
-            else: # 백돌의 예상 착수 지점
-                circle_rect = i
-                pygame.draw.circle(circle, (255, 255, 255, 128), (radius, radius), radius)
+    if not end:
+        for i in range(361):
+            if rects[i].collidepoint(mouse_pos):
+                stone_value = checkerboard[checkerboard_pos[i][0]][checkerboard_pos[i][1]]
+                if black and stone_value == 0: # 흑돌의 예상 착수 지점
+                    circle_rect = rects[i]
+                    pygame.draw.circle(circle, (0, 0, 0, 128), (RADIUS, RADIUS), RADIUS)
+                elif not black and stone_value == 0: # 백돌의 예상 착수 지점
+                    circle_rect = rects[i]
+                    pygame.draw.circle(circle, (255, 255, 255, 128), (RADIUS, RADIUS), RADIUS)
     
     screen.blit(background_img, (0, 0))
     
@@ -194,24 +248,12 @@ while running:
     # 착수
     for i in range(len(placement_poses)):
         if i % 2 == 0: # 흑돌 착수
-            pygame.draw.circle(screen, (0, 0, 0), placement_poses[i], radius)
+            pygame.draw.circle(screen, (0, 0, 0), placement_poses[i], RADIUS)
         else: # 백돌 착수
-            pygame.draw.circle(screen, (255, 255, 255), placement_poses[i], radius)
+            pygame.draw.circle(screen, (255, 255, 255), placement_poses[i], RADIUS)
     
-    # 승자 확인
-    if black:
-        win_by_row = check_winner(subcheckerboard, BLACKWINCHECK) # 행 확인
-        win_by_column = check_winner(numpy.array(subcheckerboard).T.tolist(), BLACKWINCHECK) # 열 확인
-        win_by_diagonal = check_winner(tempcheckerboard, BLACKWINCHECK) # 댁각선 확인
-        if win_by_row or win_by_column or win_by_diagonal:
-            print("Black win!")
-
-    else:
-        win_by_row = check_winner(subcheckerboard, WHITEWINCHECK) # 행 확인
-        win_by_column = check_winner(numpy.array(subcheckerboard).T.tolist(), WHITEWINCHECK) # 열 확인
-        win_by_diagonal = check_winner(tempcheckerboard, WHITEWINCHECK) # 대각선 확인
-        if win_by_row or win_by_column or win_by_diagonal:
-            print("White win!")
+    if show_text:
+        screen.blit(text, (TEXT_X, TEXT_Y))
     
     pygame.display.flip()
 
