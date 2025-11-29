@@ -129,7 +129,8 @@ pygame.display.set_caption("오목") # 제목
 background_img = pygame.image.load("img/checkerboard.png") # 배경 이미지
 
 font = pygame.font.SysFont(None, 150)# 폰트
-TEXT_COLOR = (3, 34, 171) # 텍스트 색상
+TEXT_COLOR = (0, 0, 0) # 텍스트 색상
+BACKGROUND_OF_TEXT_COLOR = (255, 255, 255) # 텍스트의 배경색
 
 checkerboard = [] # 바둑판
 for i in range(19):
@@ -166,6 +167,8 @@ circle = pygame.Surface((RADIUS * 2, RADIUS * 2), pygame.SRCALPHA)
 placement_poses = [] # 착수 위치를 담을 리스트
 black = True # 흑돌 여부 (흑돌부터 시작)
 show_text = False # 텍스트 렌더링 여부
+text_on = False # 텍스트 보여주기 여부
+enable_text_on_and_off = False # 텍스트 보여주기 기능 여부
 end = False # 종료 여부
 running = True
 while running:
@@ -175,6 +178,16 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        
+        # 텍스트 켜기/끄기
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_t and enable_text_on_and_off:
+                if text_on:
+                    show_text = False
+                    text_on = False
+                else:
+                    show_text = True
+                    text_on = True
         
         keys = pygame.key.get_pressed()
         if keys[pygame.K_r]: # 초기화
@@ -203,7 +216,7 @@ while running:
                         checkerboard[placement_pos[0]][placement_pos[1]] = 1 # 흑돌 위치 표시
                         black = False
                         if winner(placement_pos, BLACKWINCHECK): # 흑돌의 오목 완성 확인
-                            text = font.render("Black win!", True, TEXT_COLOR)
+                            text = font.render("Black win!", True, TEXT_COLOR, BACKGROUND_OF_TEXT_COLOR)
                             TEXT_WIDTH, TEXT_HEIGHT = text.get_size()
                             TEXT_X, TEXT_Y = (SCREEN_LENGTH - TEXT_WIDTH) / 2, (SCREEN_LENGTH - TEXT_HEIGHT) / 2
                             show_text = True
@@ -214,7 +227,7 @@ while running:
                         checkerboard[placement_pos[0]][placement_pos[1]] = -1 # 백돌 위치 표시
                         black = True
                         if winner(placement_pos, WHITEWINCHECK): # 백돌의 오목 완성 확인
-                            text = font.render("White win!", True, TEXT_COLOR)
+                            text = font.render("White win!", True, TEXT_COLOR, BACKGROUND_OF_TEXT_COLOR)
                             TEXT_WIDTH, TEXT_HEIGHT = text.get_size()
                             TEXT_X, TEXT_Y = (SCREEN_LENGTH - TEXT_WIDTH) / 2, (SCREEN_LENGTH - TEXT_HEIGHT) / 2
                             show_text = True
@@ -252,8 +265,12 @@ while running:
         else: # 백돌 착수
             pygame.draw.circle(screen, (255, 255, 255), placement_poses[i], RADIUS)
     
+    # 텍스트 보이기
     if show_text:
         screen.blit(text, (TEXT_X, TEXT_Y))
+        if not enable_text_on_and_off:
+            text_on = True
+            enable_text_on_and_off = True
     
     pygame.display.flip()
 
